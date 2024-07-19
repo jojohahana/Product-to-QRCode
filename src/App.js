@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode.react';
+import QRCodeGenerator from 'qrcode';
 
 const App = () => {
   const [products, setProducts] = useState([]);
   const [product, setProduct] = useState({ name: '', price: '', description: '' });
   const [editIndex, setEditIndex] = useState(null);
-  const printRef = useRef();
 
   useEffect(() => {
     // Fetch initial product list if needed
@@ -39,25 +39,23 @@ const App = () => {
 
   const handlePrintProduct = (index) => {
     const productToPrint = products[index];
-    const printWindow = window.open('', '', 'width=600,height=400');
-    printWindow.document.write('<html><head><title>Print</title></head><body>');
-    printWindow.document.write(`<p>Name: ${productToPrint.name}</p>`);
-    printWindow.document.write(`<p>Price: ${productToPrint.price}</p>`);
-    printWindow.document.write(`<p>Description: ${productToPrint.description}</p>`);
-    const qrCodeData = JSON.stringify(productToPrint);
-    printWindow.document.write('<div id="qrcode"></div>');
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.onload = () => {
-      const qrCodeContainer = printWindow.document.getElementById('qrcode');
-      const qrCodeElement = document.createElement('canvas');
-      QRCode.toCanvas(qrCodeElement, qrCodeData, function (error) {
-        if (error) console.error(error);
-        qrCodeContainer.appendChild(qrCodeElement);
+    const qrCodeValue = JSON.stringify(productToPrint);
+
+    QRCodeGenerator.toDataURL(qrCodeValue, { errorCorrectionLevel: 'H' }, function (err, url) {
+      if (err) console.error(err);
+
+      const printWindow = window.open('', '', 'width=600,height=400');
+      printWindow.document.write('<html><head><title>Print</title></head><body>');
+      printWindow.document.write(`<p>Name: ${productToPrint.name}</p>`);
+      printWindow.document.write(`<p>Price: ${productToPrint.price}</p>`);
+      printWindow.document.write(`<p>Description: ${productToPrint.description}</p>`);
+      printWindow.document.write(`<img src="${url}" alt="QR Code" />`);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.onload = () => {
         printWindow.print();
-        printWindow.close();
-      });
-    };
+      };
+    });
   };
 
   return (
@@ -96,7 +94,6 @@ const App = () => {
               <button onClick={() => handleEditProduct(index)}>Edit</button>
               <button onClick={() => handleDeleteProduct(index)}>Delete</button>
               <button onClick={() => handlePrintProduct(index)}>Print</button>
-              <QRCode value={JSON.stringify(p)} />
             </li>
           ))}
         </ul>
